@@ -6,13 +6,14 @@ Even in the world of code generation it is cheaper to find something than make i
 
 The value is going to be in the projects here.
 
-
 ## Installation
+```
 pipx install gh-find-code-mcp
+```
 
 ## Usage
 Add gh-find-code-mcp as an MCP server with pipes.
 
-
-
+## About me
+I make lots of tools to merge myself with an AI. Follow me on http://github.com/talwrii
 

@@ -1,15 +1,22 @@
 [project]
 name = "gh-find-code-mcp"
-version = "0.1.0"
+version = "1.0.0"
 description = "An MCP server to find code on GitHub via gh search repos"
 requires-python = ">=3.10"
-dependencies = [
-    "mcp",
-]
+keywords = [ "mcp", "mcp-server", "github", "search", "code-search",]
+classifiers = [ "Development Status :: 3 - Alpha", "License :: OSI Approved :: MIT License", "Programming Language :: Python :: 3",]
+dependencies = [ "mcp",]
+[[project.authors]]
+name = "talwrii"
+email = "talwrii@gmail.com"
+
+[build-system]
+requires = [ "setuptools>=68.0",]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/talwrii/gh-find-code-mcp"
+Repository = "https://github.com/talwrii/gh-find-code-mcp"
 
 [project.scripts]
 gh-find-code-mcp = "gh_find_code_mcp.main:main"
-
-[build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.build_meta"
