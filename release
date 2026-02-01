@@ -1,0 +1,47 @@
+#!/bin/bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# SSH ControlMaster setup
+CONTROL_PATH="/tmp/ssh-release-%r@%h:%p"
+
+echo "🔐 Establishing SSH connection to GitHub..."
+ssh -o ControlMaster=yes -o ControlPath="$CONTROL_PATH" -o ControlPersist=300 -fN git@github.com
+
+# Use ControlMaster for git
+export GIT_SSH_COMMAND="ssh -o ControlPath=$CONTROL_PATH"
+
+# Fail if there are any modified files
+if ! git diff-index --quiet HEAD --; then
+    echo "Error: You have uncommitted changes to tracked files"
+    git status --short
+    ssh -o ControlPath="$CONTROL_PATH" -O exit git@github.com 2>/dev/null || true
+    exit 1
+fi
+
+git push
+ 
+if [ -f pyproject.toml ]; then
+    VERSION=$(cat pyproject.toml | toml2json | jq -rc '.project.version')
+else
+    VERSION=$(python3 setup.py --version)
+fi
+
+git tag "$VERSION"
+git push --tags
+
+rm -rf dist *.egg-info build
+
+if [ -f pyproject.toml ]; then
+    python3 -m build
+else
+    python3 setup.py sdist
+fi
+
+twine upload -p $(cat token) dist/*
+
+# Close ControlMaster
+ssh -o ControlPath="$CONTROL_PATH" -O exit git@github.com 2>/dev/null || true
+
+echo "✅ Released version $VERSION"
