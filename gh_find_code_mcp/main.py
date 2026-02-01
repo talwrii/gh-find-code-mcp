@@ -1,8 +1,14 @@
+import argparse
 import json
+import os
 import shutil
 import subprocess
+import sys
 
 from mcp.server.fastmcp import FastMCP
+
+CONFIG_DIR = os.path.expanduser("~/.config/gh-find-code-mcp")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 server = FastMCP(
     "gh-find-code-mcp",
@@ -20,10 +26,37 @@ server = FastMCP(
 )
 
 
-def _run_gh(args: list[str]) -> str:
+def _load_config() -> dict:
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
+
+
+def _save_config(config: dict):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config, f)
+
+
+def _find_gh() -> str | None:
     gh = shutil.which("gh")
+    if gh:
+        return gh
+    config = _load_config()
+    gh_path = config.get("gh_path")
+    if gh_path and os.path.isfile(gh_path) and os.access(gh_path, os.X_OK):
+        return gh_path
+    return None
+
+
+def _run_gh(args: list[str]) -> str:
+    gh = _find_gh()
     if gh is None:
-        return "Error: gh CLI not found in PATH"
+        return "Error: gh CLI not found. Run: gh-find-code-mcp --set-gh /path/to/gh"
     result = subprocess.run(
         [gh, *args],
         capture_output=True,
@@ -103,6 +136,21 @@ def search_repos(
 
 
 def main():
+    parser = argparse.ArgumentParser(prog="gh-find-code-mcp")
+    parser.add_argument("--set-gh", metavar="PATH", help="Set and persist the path to the gh CLI binary")
+    args = parser.parse_args()
+
+    if args.set_gh:
+        path = os.path.expanduser(args.set_gh)
+        if not os.path.isfile(path) or not os.access(path, os.X_OK):
+            print(f"Error: {path} is not an executable file", file=sys.stderr)
+            sys.exit(1)
+        config = _load_config()
+        config["gh_path"] = os.path.abspath(path)
+        _save_config(config)
+        print(f"Saved gh path: {config['gh_path']}")
+        sys.exit(0)
+
     server.run(transport="stdio")
 
 
